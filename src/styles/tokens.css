@@ -1,0 +1,110 @@
+/* ROADWATCH — Design Tokens
+   All colours, spacing, fonts, and animations live here.
+   Never hardcode values outside this file. */
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600;700&display=swap');
+
+:root {
+  /* ─── Brand Palette ─── */
+  --color-bg:             #0f1117;
+  --color-bg-surface:     #16181f;
+  --color-bg-elevated:    #1e2028;
+  --color-bg-overlay:     rgba(15, 17, 23, 0.85);
+
+  --color-border:         rgba(255, 255, 255, 0.08);
+  --color-border-strong:  rgba(255, 255, 255, 0.16);
+
+  /* Road type colours */
+  --color-nh:             #f4a261;   /* amber — National Highway */
+  --color-sh:             #4cc9f0;   /* sky blue — State Highway */
+  --color-mdr:            #a0a0b0;   /* grey — MDR/ODR */
+  --color-vr:             #6a6a80;   /* dim — Village Road */
+
+  /* Risk colours */
+  --color-risk-critical:  #e63946;
+  --color-risk-high:      #f4a261;
+  --color-risk-medium:    #f9c74f;
+  --color-risk-low:       #2a9d8f;
+  --color-risk-good:      #52b788;
+
+  /* Status */
+  --color-success:        #52b788;
+  --color-warning:        #f9c74f;
+  --color-danger:         #e63946;
+  --color-info:           #4cc9f0;
+
+  /* Text */
+  --color-text-primary:   #f0f0f5;
+  --color-text-secondary: #9090a8;
+  --color-text-muted:     #5a5a72;
+  --color-text-inverse:   #0f1117;
+
+  /* Accent */
+  --color-accent:         #f4a261;
+  --color-accent-glow:    rgba(244, 162, 97, 0.20);
+
+  /* ─── Spacing Scale ─── */
+  --space-1:   4px;
+  --space-2:   8px;
+  --space-3:   12px;
+  --space-4:   16px;
+  --space-5:   20px;
+  --space-6:   24px;
+  --space-8:   32px;
+  --space-10:  40px;
+  --space-12:  48px;
+  --space-16:  64px;
+
+  /* ─── Border Radius ─── */
+  --radius-sm:   6px;
+  --radius-md:   10px;
+  --radius-card: 14px;
+  --radius-pill: 999px;
+
+  /* ─── Typography ─── */
+  --font-display: 'DM Mono', monospace;
+  --font-body:    'Instrument Sans', sans-serif;
+
+  --text-xs:   11px;
+  --text-sm:   13px;
+  --text-base: 15px;
+  --text-md:   17px;
+  --text-lg:   20px;
+  --text-xl:   24px;
+  --text-2xl:  30px;
+  --text-3xl:  38px;
+
+  --weight-normal:   400;
+  --weight-medium:   500;
+  --weight-semibold: 600;
+  --weight-bold:     700;
+
+  /* ─── Shadows ─── */
+  --shadow-sm:   0 1px 3px rgba(0,0,0,0.4);
+  --shadow-md:   0 4px 16px rgba(0,0,0,0.5);
+  --shadow-lg:   0 8px 32px rgba(0,0,0,0.6);
+  --shadow-glow: 0 0 20px var(--color-accent-glow);
+
+  /* ─── Animation ─── */
+  --ease-out:   cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in:    cubic-bezier(0.64, 0, 0.78, 0);
+  --ease-inout: cubic-bezier(0.65, 0, 0.35, 1);
+
+  --duration-fast:   120ms;
+  --duration-normal: 220ms;
+  --duration-slow:   380ms;
+
+  /* ─── Layout ─── */
+  --navbar-height:    64px;
+  --tab-bar-height:   72px;
+  --card-max-width:   480px;
+  --sidebar-width:    360px;
+
+  /* ─── Z-Index ─── */
+  --z-map:     0;
+  --z-overlay: 10;
+  --z-card:    20;
+  --z-navbar:  30;
+  --z-modal:   40;
+  --z-toast:   50;
+}

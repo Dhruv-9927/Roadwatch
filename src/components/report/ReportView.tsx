@@ -4,6 +4,8 @@ import { useAppStore } from '../../store/app.store';
 import { routeComplaint } from '../../lib/routing-engine';
 import { saveReport, getAllReports } from '../../lib/offline-db';
 import { reverseGeocode } from '../../lib/live-data';
+import VoiceReport from './VoiceReport';
+import type { ParsedReport } from './VoiceReport';
 import type { Report, SeverityLevel, RoadDNA } from '../../types';
 
 function generateId() {
@@ -178,6 +180,17 @@ export default function ReportView() {
         <h1>File a Complaint</h1>
         <p>Your complaint will be routed to the exact responsible authority, not a generic inbox.</p>
       </header>
+
+      {/* ── Hindi Voice Report ── */}
+      <VoiceReport
+        onParsed={(p: ParsedReport) => {
+          if (p.road)     setRoadName(p.road);
+          if (p.issueEn)  setDescription(
+            `${p.issueEn}${p.location ? ' near ' + p.location : ''}. Severity: ${p.severity}.`
+          );
+          if (p.severity) setSeverity(p.severity as SeverityLevel);
+        }}
+      />
 
       {/* Routing visualiser */}
       {routing && (

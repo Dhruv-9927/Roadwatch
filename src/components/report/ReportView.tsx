@@ -6,6 +6,8 @@ import { saveReport, getAllReports } from '../../lib/offline-db';
 import { reverseGeocode } from '../../lib/live-data';
 import VoiceReport from './VoiceReport';
 import type { ParsedReport } from './VoiceReport';
+import { FixVerifiedToast, FixedBadge, useFixVerified } from './FixVerified';
+import type { FixEvent } from './FixVerified';
 import type { Report, SeverityLevel, RoadDNA } from '../../types';
 
 function generateId() {
@@ -38,6 +40,9 @@ export default function ReportView() {
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [history,   setHistory]   = useState<Report[]>([]);
+  const [fixedIds,  setFixedIds]  = useState<Record<string, FixEvent>>({});
+
+  const { activeToast, triggerFix, dismissToast } = useFixVerified();
 
   // Routing decision derived from selected road in cache
   const selectedRoad: RoadDNA | undefined = reportDraft?.road_id
@@ -156,17 +161,61 @@ export default function ReportView() {
           <section aria-label="Your submitted reports">
             <h2 style={{ fontSize: 'var(--text-lg)', marginBottom: 'var(--space-3)' }}>Your Reports</h2>
             <div className="report-history">
-              {history.map((r) => (
-                <div key={r.id} className="report-card">
-                  <div className="report-card-content">
-                    <div className="report-card-title">{r.road_name || 'Unknown road'}</div>
-                    <div className="report-card-meta">
-                      {r.severity} · {new Date(r.created_at).toLocaleDateString('en-IN')}
+              {history.map((r) => {
+                const isFixed = !!fixedIds[r.id];
+                return (
+                  <div key={r.id} className="report-card" style={{
+                    border: isFixed ? '1px solid rgba(82,183,136,0.3)' : undefined,
+                    background: isFixed ? 'rgba(82,183,136,0.04)' : undefined,
+                    flexDirection: 'column',
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-3)' }}>
+                      <div className="report-card-content">
+                        <div className="report-card-title">{r.road_name || 'Unknown road'}</div>
+                        <div className="report-card-meta">
+                          {r.severity} · {new Date(r.created_at).toLocaleDateString('en-IN')}
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0 }}>
+                        <span className={`status-chip ${isFixed ? 'synced' : r.status}`}>
+                          {isFixed ? '✓ Fixed' : r.status}
+                        </span>
+                        {/* Demo trigger: Mark as Fixed */}
+                        {!isFixed && (
+                          <button
+                            id={`mark-fixed-${r.id}`}
+                            onClick={() => {
+                              const ev: FixEvent = {
+                                reportId:  r.id,
+                                road:      r.road_name || 'NH-3',
+                                location:  'Mandi District',
+                                fixedDate: new Date().toISOString(),
+                                authority: 'NHAI Mandi Division',
+                                refNo:     r.id.slice(-6).toUpperCase(),
+                              };
+                              setFixedIds(prev => ({ ...prev, [r.id]: ev }));
+                              triggerFix(ev);
+                            }}
+                            style={{
+                              fontSize: 10, padding: '3px 8px',
+                              background: 'rgba(82,183,136,0.08)',
+                              border: '1px solid rgba(82,183,136,0.25)',
+                              borderRadius: 6, cursor: 'pointer',
+                              color: '#52b788',
+                              fontFamily: 'var(--font-display)',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            Mark Fixed ✓
+                          </button>
+                        )}
+                      </div>
                     </div>
+                    {/* Fixed badge with pride message */}
+                    {isFixed && <FixedBadge fixEvent={fixedIds[r.id]} />}
                   </div>
-                  <span className={`status-chip ${r.status}`}>{r.status}</span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </section>
         )}
@@ -176,6 +225,8 @@ export default function ReportView() {
 
   return (
     <div className="report-view">
+      {/* ── Fix Verified Toast (global, above everything) ── */}
+      {activeToast && <FixVerifiedToast event={activeToast} onDismiss={dismissToast} />}
       <header>
         <h1>File a Complaint</h1>
         <p>Your complaint will be routed to the exact responsible authority, not a generic inbox.</p>

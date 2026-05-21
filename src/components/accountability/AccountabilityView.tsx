@@ -105,6 +105,11 @@ const css = `
 .response-fill { height: 100%; border-radius: 3px; transition: width 0.8s cubic-bezier(0.22,1,0.36,1); }
 .response-val { font-family: var(--font-display); font-size: var(--text-xs); color: var(--color-text-muted); width: 60px; text-align: right; flex-shrink: 0; }
 
+@media (max-width: 480px) {
+  .response-label { width: 100px; }
+  .contractor-response-row { padding: var(--space-3) var(--space-4); }
+}
+
 /* Roads list */
 .contractor-roads {
   padding: var(--space-3) var(--space-5) var(--space-4);
@@ -298,7 +303,7 @@ function SpendSafetyScatter({ data }: { data: DistrictData[] }) {
     g.selectAll('circle').data(data).enter().append('circle')
       .attr('cx', d => x(d.budget_utilization)).attr('cy', d => y(d.accident_rate))
       .attr('r', d => 7 + d.road_count / 22).style('fill', colorFn).style('opacity', 0.85).style('cursor', 'pointer')
-      .on('mouseover', function(event, d) {
+      .on('mouseover', function(_event, d) {
         d3.select(this).attr('r', 13).style('opacity', 1);
         tip.style('display', 'block').html(`<strong style="color:var(--color-text-primary)">${d.district}</strong><br/>Budget: <strong>${Math.round(d.budget_utilization * 100)}%</strong><br/>Accidents: <strong>${d.accident_rate}/100km/yr</strong><br/>Roads: <strong>${d.road_count}</strong>`);
       })
@@ -332,10 +337,6 @@ function getResponseColor(days: number): string {
   return '#52b788';
 }
 
-// Sort: worst first (most claims + slowest response)
-const sortedContractors = [...CONTRACTORS].sort((a, b) =>
-  (b.claims * b.avgResponseDays) - (a.claims * a.avgResponseDays)
-);
 const MAX_RESPONSE = Math.max(...CONTRACTORS.map(c => c.avgResponseDays));
 
 function ContractorScorecard() {

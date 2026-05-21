@@ -14,6 +14,15 @@
   transition: background 0.08s ease;
 }
 
+@media (min-width: 768px) {
+  .scan-view {
+    max-width: 680px;
+    margin: 0 auto;
+    border-left: 1px solid var(--color-border);
+    border-right: 1px solid var(--color-border);
+  }
+}
+
 /* Red flash on pothole detection */
 .scan-view.flash-red {
   background: #1a0608;
@@ -883,4 +892,89 @@
 
 .animate-spin {
   animation: spin 1s linear infinite;
+}
+
+/* ── Simulator Controls ──────────────────────────────────────────────────────── */
+.simulator-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px dashed rgba(244, 162, 97, 0.25);
+  background: rgba(244, 162, 97, 0.02);
+  margin-top: 4px;
+  animation: slideUp 0.25s ease both;
+}
+
+.simulator-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-display, 'DM Mono', monospace);
+  font-size: 10px;
+  color: #F4A261;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.simulator-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.sim-btn {
+  flex: 1;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+  font-family: var(--font-display, 'DM Mono', monospace);
+}
+
+.sim-btn.jolt {
+  background: rgba(230, 57, 70, 0.08);
+  border-color: rgba(230, 57, 70, 0.2);
+  color: #E63946;
+}
+
+.sim-btn.jolt:hover {
+  background: rgba(230, 57, 70, 0.15);
+  border-color: #E63946;
+}
+
+.sim-btn.drive {
+  background: rgba(82, 183, 136, 0.08);
+  border-color: rgba(82, 183, 136, 0.2);
+  color: #52B788;
+}
+
+.sim-btn.drive:hover {
+  background: rgba(82, 183, 136, 0.15);
+  border-color: #52B788;
+}
+
+.sim-btn.drive.active {
+  background: linear-gradient(135deg, rgba(82, 183, 136, 0.25) 0%, rgba(42, 157, 143, 0.25) 100%);
+  border-color: #52B788;
+  color: #fff;
+  box-shadow: 0 0 10px rgba(82, 183, 136, 0.15);
+}
+
+.sim-badge {
+  display: inline-block;
+  background: rgba(244, 162, 97, 0.12);
+  color: #F4A261;
+  font-size: 8px;
+  padding: 1px 4px;
+  border-radius: 4px;
+  margin-left: auto;
+  border: 1px solid rgba(244, 162, 97, 0.2);
 }

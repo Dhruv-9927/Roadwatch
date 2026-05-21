@@ -231,7 +231,7 @@ const legalCSS = `
 
 // ── Generate notice text ──────────────────────────────────────────────────────
 function buildNoticeText(
-  road: string,
+  _road: string,
   defect: string,
   gps: string,
   severity: string,
@@ -305,7 +305,7 @@ export default function ReportView() {
   const setReportDraft = useAppStore(s => s.setReportDraft);
 
   const [roadKey,     setRoadKey]     = useState('NH-3');
-  const [roadName,    setRoadName]    = useState(reportDraft?.road_name ?? '');
+  const [roadName,    setRoadName]    = useState(reportDraft?.road_name ?? HP_ROAD_DB['NH-3'].name);
   const [description, setDescription] = useState(reportDraft?.description ?? '');
   const [severity,    setSeverity]    = useState<SeverityLevel>('high');
   const [lat,  setLat]  = useState(String(reportDraft?.latitude  ?? ''));
@@ -329,7 +329,9 @@ export default function ReportView() {
     const el = document.createElement('style');
     el.textContent = legalCSS;
     document.head.appendChild(el);
-    return () => document.head.removeChild(el);
+    return () => {
+      document.head.removeChild(el);
+    };
   }, []);
 
   useEffect(() => {
@@ -386,8 +388,8 @@ export default function ReportView() {
     URL.revokeObjectURL(url);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (!roadName || !description) return;
     setSubmitting(true);
     const report: Report = {
@@ -548,7 +550,7 @@ export default function ReportView() {
                 rows={3}
                 aria-label="Defect description"
               />
-              <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+              <div className="severity-pills-row">
                 {SEVERITY_OPTIONS.map(opt => (
                   <button key={opt.value} type="button"
                     className={`severity-pill${severity === opt.value ? ` selected-${opt.value}` : ''}`}
@@ -603,20 +605,46 @@ export default function ReportView() {
           </div>
         </div>
 
-        {/* Generate Notice button */}
-        <div style={{ padding: '0 var(--space-5) var(--space-5)' }}>
+        {/* Actions row */}
+        <div className="report-actions-group">
           <button
             className="generate-notice-btn"
             onClick={handleGenerateNotice}
             disabled={!description}
             aria-label="Generate Legal Notice"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
               <polyline points="14 2 14 8 20 8"/>
               <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
             </svg>
-            Generate Legal Notice PDF
+            Generate Notice
+          </button>
+
+          <button
+            id="report-submit-btn"
+            className="report-submit submit-accent"
+            onClick={() => handleSubmit()}
+            disabled={submitting || !roadName || !description}
+            aria-label="Submit complaint report"
+          >
+            {submitting ? (
+              <>
+                <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                  <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                </svg>
+                Submitting…
+              </>
+            ) : offlineMode ? (
+              '⏳ Queue Report'
+            ) : (
+              <>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
+                  <polyline points="22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+                </svg>
+                Submit Report →
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -648,47 +676,7 @@ export default function ReportView() {
         if (p.severity) setSeverity(p.severity as SeverityLevel);
       }} />
 
-      {/* ── Traditional form (kept for manual entry) ── */}
-      <form className="report-form" onSubmit={handleSubmit} aria-label="Report submission form">
-        <div className="report-form-section">
-          <h2>Road Details</h2>
-          <div className="form-field">
-            <label className="form-label" htmlFor="road-name">Road Name / Number <span className="required">*</span></label>
-            <input id="road-name" className="form-input" type="text" value={roadName} onChange={e => setRoadName(e.target.value)} placeholder="e.g. NH-3 Chandigarh-Manali Highway" required autoComplete="off" />
-          </div>
-          <div className="form-field">
-            <label className="form-label">GPS Location</label>
-            <div className="gps-row">
-              <input className="form-input" type="text" value={lat && lng ? `${parseFloat(lat).toFixed(5)}, ${parseFloat(lng).toFixed(5)}` : ''} placeholder="Latitude, Longitude" readOnly aria-label="GPS coordinates" />
-              <button type="button" className="gps-btn" onClick={handleGetGPS} disabled={gpsLoading} aria-label="Get GPS">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 1v3M12 20v3M1 12h3M20 12h3"/></svg>
-                {gpsLoading ? 'Locating…' : 'Use GPS'}
-              </button>
-            </div>
-          </div>
-        </div>
-        <div className="report-form-section">
-          <h2>Issue Details</h2>
-          <div className="form-field">
-            <label className="form-label" htmlFor="description">Description <span className="required">*</span></label>
-            <textarea id="description" className="form-textarea" value={description} onChange={e => setDescription(e.target.value)} placeholder="Describe the road condition…" required />
-          </div>
-          <div className="form-field">
-            <label className="form-label">Severity</label>
-            <div className="severity-pills" role="radiogroup" aria-label="Severity level">
-              {SEVERITY_OPTIONS.map(opt => (
-                <button key={opt.value} type="button" className={`severity-pill${severity === opt.value ? ` selected-${opt.value}` : ''}`} onClick={() => setSeverity(opt.value)} role="radio" aria-checked={severity === opt.value}>{opt.label}</button>
-              ))}
-            </div>
-          </div>
-        </div>
-        <div className="report-form-section">
-          <button id="report-submit-btn" type="submit" className="report-submit" disabled={submitting || !roadName || !description} aria-label="Submit complaint report">
-            {submitting ? (<><svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>Submitting…</>) : offlineMode ? '⏳ Queue Report (Offline)' : 'Submit Report →'}
-          </button>
-          {offlineMode && <p style={{ textAlign: 'center', fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)', marginTop: 'var(--space-3)' }}>You're offline. Report will sync automatically when connected.</p>}
-        </div>
-      </form>
+
 
       {/* Routing visualiser */}
       {routing && (

@@ -53,8 +53,8 @@ const TABS: Tab[] = [
   { id: 'map',            label: 'Map',         icon: <MapIcon /> },
   { id: 'scan',           label: 'Scan',        icon: <ScanIcon /> },
   { id: 'report',         label: 'Report',      icon: <ReportIcon /> },
-  { id: 'accountability', label: 'Accountability', icon: <AccountIcon /> },
-  { id: 'intelligence',   label: 'Intelligence',   icon: <IntelIcon /> },
+  { id: 'accountability', label: 'Registry',    icon: <AccountIcon /> },
+  { id: 'intelligence',   label: 'Insights',    icon: <IntelIcon /> },
   { id: 'offline',        label: 'Offline',        icon: <OfflineIcon /> },
 ];
 

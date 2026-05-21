@@ -11,10 +11,22 @@
 import type { RoadDNA, RoadType, CountryCode } from '../types';
 
 // ── Config ─────────────────────────────────────────────────────────────────
-const OVERPASS_API = import.meta.env.VITE_OVERPASS_API ?? 'https://overpass-api.de/api/interpreter';
-const NOMINATIM_API = import.meta.env.VITE_NOMINATIM_API ?? 'https://nominatim.openstreetmap.org';
+const OVERPASS_API    = import.meta.env.VITE_OVERPASS_API  ?? 'https://overpass-api.de/api/interpreter';
+const NOMINATIM_API   = import.meta.env.VITE_NOMINATIM_API ?? 'https://nominatim.openstreetmap.org';
 const DATA_GOV_API_KEY = import.meta.env.VITE_DATA_GOV_API_KEY ?? '';
-const DATA_GOV_BASE = 'https://api.data.gov.in/resource';
+const DATA_GOV_BASE   = 'https://api.data.gov.in/resource';
+
+// ── Helper: pick the first truthy value from a record across multiple possible keys ──
+function pick(r: Record<string, string>, ...keys: string[]): string {
+  for (const k of keys) {
+    const v = r[k];
+    if (v !== undefined && v !== null && v !== '') return String(v);
+  }
+  return '';
+}
+function pickNum(r: Record<string, string>, ...keys: string[]): number {
+  return Number(pick(r, ...keys)) || 0;
+}
 
 // Full India bounding box — used for the initial map view
 export const INDIA_BBOX = {
@@ -155,13 +167,14 @@ export function osmWayToPartialRoadDNA(way: OverpassWay): Partial<RoadDNA> {
 /**
  * Fetches road accident statistics from data.gov.in OGD platform.
  * Data source: MoRTH — Road Accidents in India (district-wise).
+ * API key: configured via VITE_DATA_GOV_API_KEY
  */
 export async function fetchAccidentStats(
   state: string = 'Himachal Pradesh',
   limit: number = 100
 ): Promise<AccidentStat[]> {
   if (!DATA_GOV_API_KEY) {
-    console.warn('[ROADWATCH] No data.gov.in API key — using fallback');
+    console.warn('[ROADWATCH] data.gov.in API key not set — using fallback accident stats');
     return getFallbackAccidentStats();
   }
 
@@ -169,21 +182,42 @@ export async function fetchAccidentStats(
   url.searchParams.set('api-key', DATA_GOV_API_KEY);
   url.searchParams.set('format', 'json');
   url.searchParams.set('limit', String(limit));
+  // OGD filter — try both common column name variants
   url.searchParams.set('filters[state_ut_name]', state);
 
   try {
     const res = await fetch(url.toString());
-    if (!res.ok) throw new Error(`data.gov.in API error: ${res.status}`);
+    if (!res.ok) throw new Error(`data.gov.in accident API returned HTTP ${res.status}`);
     const json = await res.json();
 
-    // Parse OGD response format
-    const records = json.records ?? json.data ?? [];
-    return records.map((r: Record<string, string>) => ({
-      district: r['district_name'] ?? r['District'] ?? r['district'] ?? 'Unknown',
-      state: r['state_ut_name'] ?? r['State'] ?? state,
-      total_accidents: Number(r['total_accidents'] ?? r['Total Accidents'] ?? 0),
-      fatal_accidents: Number(r['fatal_accidents'] ?? r['Fatal'] ?? 0),
-      year: Number(r['year'] ?? r['Year'] ?? 2022),
+    // OGD platform wraps records under either `records` or `data`
+    const records: Record<string, string>[] = json.records ?? json.data ?? [];
+
+    if (records.length === 0) {
+      console.warn('[ROADWATCH] Accident API returned 0 records — check resource ID or filter. Falling back.');
+      return getFallbackAccidentStats();
+    }
+
+    console.info(`[ROADWATCH] ✅ Live accident data: ${records.length} records from data.gov.in`);
+
+    return records.map((r) => ({
+      // district — multiple possible column names in different dataset versions
+      district: pick(r,
+        'district_name', 'District Name', 'District', 'district',
+        'DISTRICT_NAME', 'DistrictName'
+      ) || 'Unknown',
+      state: pick(r,
+        'state_ut_name', 'State/UT Name', 'State', 'state', 'STATE'
+      ) || state,
+      total_accidents: pickNum(r,
+        'total_accidents', 'Total Accidents', 'total_road_accidents',
+        'Total Road Accidents', 'accidents'
+      ),
+      fatal_accidents: pickNum(r,
+        'fatal_accidents', 'Fatal Accidents', 'fatal', 'Fatal',
+        'total_fatal_accidents', 'fatalities'
+      ),
+      year: pickNum(r, 'year', 'Year', 'YEAR') || 2022,
     }));
   } catch (err) {
     console.error('[ROADWATCH] Accident stats fetch failed:', err);
@@ -194,11 +228,13 @@ export async function fetchAccidentStats(
 /**
  * Fetches NH project data from data.gov.in.
  * Data source: MoRTH — National Highway projects list.
+ * API key: configured via VITE_DATA_GOV_API_KEY
  */
 export async function fetchNHProjects(
   state: string = 'Himachal Pradesh'
 ): Promise<NHProject[]> {
   if (!DATA_GOV_API_KEY) {
+    console.warn('[ROADWATCH] data.gov.in API key not set — using fallback NH projects');
     return getFallbackNHProjects();
   }
 
@@ -206,23 +242,50 @@ export async function fetchNHProjects(
   url.searchParams.set('api-key', DATA_GOV_API_KEY);
   url.searchParams.set('format', 'json');
   url.searchParams.set('limit', '50');
+  // Try both common filter key names
   url.searchParams.set('filters[state]', state);
 
   try {
     const res = await fetch(url.toString());
-    if (!res.ok) throw new Error(`data.gov.in NH projects error: ${res.status}`);
+    if (!res.ok) throw new Error(`data.gov.in NH projects API returned HTTP ${res.status}`);
     const json = await res.json();
-    const records = json.records ?? json.data ?? [];
+    const records: Record<string, string>[] = json.records ?? json.data ?? [];
 
-    return records.map((r: Record<string, string>) => ({
-      project_name: r['project_name'] ?? r['Project Name'] ?? '',
-      nh_number:    r['nh_number'] ?? r['NH No'] ?? '',
-      state:        r['state'] ?? state,
-      length_km:    Number(r['length_km'] ?? r['Length (KM)'] ?? 0),
-      cost_crore:   Number(r['cost_crore'] ?? r['Cost (Crore)'] ?? 0),
-      status:       r['status'] ?? r['Status'] ?? 'Unknown',
-      completion_date: r['completion_date'] ?? r['Target Completion'] ?? '',
-      contractor:   r['contractor'] ?? r['Contractor Name'] ?? 'Not disclosed',
+    if (records.length === 0) {
+      console.warn('[ROADWATCH] NH projects API returned 0 records — using fallback');
+      return getFallbackNHProjects();
+    }
+
+    console.info(`[ROADWATCH] ✅ Live NH project data: ${records.length} records from data.gov.in`);
+
+    return records.map((r) => ({
+      project_name: pick(r,
+        'project_name', 'Project Name', 'name', 'Name', 'project'
+      ),
+      nh_number: pick(r,
+        'nh_number', 'NH No', 'NH Number', 'nh_no', 'NH_Number', 'national_highway_no'
+      ),
+      state: pick(r,
+        'state', 'State', 'state_name', 'State Name'
+      ) || state,
+      length_km: pickNum(r,
+        'length_km', 'Length (KM)', 'length', 'Length', 'project_length_km'
+      ),
+      cost_crore: pickNum(r,
+        'cost_crore', 'Cost (Crore)', 'cost', 'Cost', 'project_cost_crore',
+        'sanctioned_amount_crore'
+      ),
+      status: pick(r,
+        'status', 'Status', 'project_status', 'Project Status'
+      ) || 'Unknown',
+      completion_date: pick(r,
+        'completion_date', 'Target Completion', 'scheduled_completion',
+        'Scheduled Completion Date', 'completion'
+      ),
+      contractor: pick(r,
+        'contractor', 'Contractor Name', 'contractor_name',
+        'concessionaire', 'agency'
+      ) || 'Not disclosed',
     }));
   } catch (err) {
     console.error('[ROADWATCH] NH projects fetch failed:', err);

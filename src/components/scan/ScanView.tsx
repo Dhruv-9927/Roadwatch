@@ -347,7 +347,7 @@ export default function ScanView() {
   const lastJoltTimeRef = useRef<number>(0);
   const positionRef     = useRef<GeolocationPosition | null>(null);
   const [samples,       setSamples]       = useState<AccelSample[]>([]);
-  const [detecting,     setDetecting]     = useState(false);
+  const [_detecting,     setDetecting]     = useState(false);
   const [accelActive,   setAccelActive]   = useState(false);
   const [accelError,    setAccelError]    = useState<string | null>(null);
   const [events,        setEvents]        = useState<DetectionEvent[]>([]);
@@ -356,6 +356,7 @@ export default function ScanView() {
   const [flashRed,      setFlashRed]      = useState(false);
   const [threshold,     setThreshold]     = useState(THRESHOLD_HIGH);
   const [sensitivity,   setSensitivity]   = useState<'low' | 'medium' | 'high'>('medium');
+  const [isSimDriveActive, setIsSimDriveActive] = useState(false);
 
   // ── Camera state
   const [activeTab,     setActiveTabLocal] = useState<'accel' | 'camera'>('accel');
@@ -386,6 +387,87 @@ export default function ScanView() {
       THRESHOLD_HIGH + 6
     );
   }, [sensitivity]);
+
+  // ── Simulator Hooks
+  const simulateJolt = useCallback((customType?: DetectionEvent['type'], magnitudeMultiplier = 1) => {
+    const magnitude = parseFloat((threshold + 3 + Math.random() * 8 * magnitudeMultiplier).toFixed(2));
+    const now = Date.now();
+
+    setLatestJolt(magnitude);
+    setFlashRed(true);
+    setTimeout(() => setFlashRed(false), 200);
+    setCurrentMag(magnitude);
+
+    const newSample: AccelSample = {
+      t: now,
+      x: (Math.random() - 0.5) * 5,
+      y: (Math.random() - 0.5) * 5,
+      z: magnitude,
+      magnitude
+    };
+    bufferRef.current = [...bufferRef.current.slice(-(BUFFER_SIZE - 1)), newSample];
+    setSamples([...bufferRef.current]);
+
+    const speed = 45 + Math.floor(Math.random() * 15);
+    const type = customType || (magnitude >= threshold + 5 ? 'pothole' : 'rough');
+    const confidence = parseFloat((0.75 + Math.random() * 0.2).toFixed(2));
+
+    // Simulated GPS coords in Mandi, India
+    const latOffset = (Math.random() - 0.5) * 0.003;
+    const lonOffset = (Math.random() - 0.5) * 0.003;
+    const simLat = 31.5892 + latOffset;
+    const simLon = 76.9182 + lonOffset;
+
+    const newEvent: DetectionEvent = {
+      id: `${now}-${Math.random().toString(36).slice(2, 6)}`,
+      timestamp: now,
+      lat: simLat,
+      lon: simLon,
+      magnitude,
+      type,
+      speed_kmh: speed,
+      confidence,
+      status: 'queued',
+    };
+
+    setEvents((prev) => [newEvent, ...prev].slice(0, 20));
+  }, [threshold]);
+
+  // 10Hz micro-vibrations stream during test drive
+  useEffect(() => {
+    if (!isSimDriveActive || !accelActive) return;
+
+    const interval = setInterval(() => {
+      const now = Date.now();
+      const baseVib = 1.5 + Math.random() * 3.5;
+      setCurrentMag(baseVib);
+
+      const sample: AccelSample = {
+        t: now,
+        x: (Math.random() - 0.5) * 2,
+        y: (Math.random() - 0.5) * 2,
+        z: baseVib,
+        magnitude: baseVib,
+      };
+
+      bufferRef.current = [...bufferRef.current.slice(-(BUFFER_SIZE - 1)), sample];
+      setSamples([...bufferRef.current]);
+    }, 100);
+
+    return () => clearInterval(interval);
+  }, [isSimDriveActive, accelActive]);
+
+  // Periodic random road anomalies (6s interval)
+  useEffect(() => {
+    if (!isSimDriveActive || !accelActive) return;
+
+    const interval = setInterval(() => {
+      const isSpeedbump = Math.random() > 0.8;
+      simulateJolt(isSpeedbump ? 'speedbump' : 'pothole');
+    }, 6000);
+
+    return () => clearInterval(interval);
+  }, [isSimDriveActive, accelActive, simulateJolt]);
 
   // ── Accelerometer start/stop
   const startAccelerometer = useCallback(async () => {
@@ -467,6 +549,7 @@ export default function ScanView() {
   const stopAccelerometer = useCallback(() => {
     setAccelActive(false);
     setDetecting(false);
+    setIsSimDriveActive(false);
     bufferRef.current = [];
     setSamples([]);
     setCurrentMag(0);
@@ -546,13 +629,13 @@ export default function ScanView() {
     // In production: POST to backend with evidence packet
   };
 
-  const handleGenerateReport = (event: DetectionEvent) => {
-    setReportDraft({
-      description: `Passive accelerometer detection: ${event.type} at Δ${event.magnitude}m/s² confidence ${Math.round(event.confidence * 100)}%.${event.lat ? ` GPS: ${event.lat.toFixed(5)}, ${event.lon!.toFixed(5)}.` : ''} Auto-logged by ROADWATCH.`,
-      severity: event.type === 'pothole' ? 'critical' : event.type === 'speedbump' ? 'medium' : 'high',
-    });
-    setAppActiveTab('report');
-  };
+  // const handleGenerateReport = (event: DetectionEvent) => {
+  //   setReportDraft({
+  //     description: `Passive accelerometer detection: ${event.type} at Δ${event.magnitude}m/s² confidence ${Math.round(event.confidence * 100)}%.${event.lat ? ` GPS: ${event.lat.toFixed(5)}, ${event.lon!.toFixed(5)}.` : ''} Auto-logged by ROADWATCH.`,
+  //     severity: event.type === 'pothole' ? 'critical' : event.type === 'speedbump' ? 'medium' : 'high',
+  //   });
+  //   setAppActiveTab('report');
+  // };
 
   // Stats
   const totalDetections = events.length;
@@ -719,6 +802,44 @@ export default function ScanView() {
                 </>
               )}
             </button>
+
+            {/* Desktop / Test Simulator Panel */}
+            {accelActive && (
+              <div className="simulator-panel">
+                <div className="simulator-header">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+                  </svg>
+                  <span>TELEMETRY SIMULATOR</span>
+                  <span className="sim-badge">TESTING TOOL</span>
+                </div>
+                <div className="simulator-buttons">
+                  <button
+                    className="sim-btn jolt"
+                    onClick={() => simulateJolt('pothole', 1.5)}
+                    title="Simulate sudden deep pothole impact"
+                  >
+                    💥 Jolt Pothole
+                  </button>
+                  <button
+                    className={`sim-btn drive ${isSimDriveActive ? 'active' : ''}`}
+                    onClick={() => setIsSimDriveActive(!isSimDriveActive)}
+                    title="Simulate driving with road micro-vibrations and random pothole occurrences"
+                  >
+                    {isSimDriveActive ? (
+                      <>
+                        <svg className="spin-svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                          <circle cx="12" cy="12" r="10"/><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+                        </svg>
+                        Test Driving...
+                      </>
+                    ) : (
+                      '🚗 Start Test Drive'
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Evidence queue */}

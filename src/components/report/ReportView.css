@@ -364,3 +364,97 @@
 .status-chip.pending   { background: rgba(244,162,97,0.15); color: var(--color-warning); border: 1px solid rgba(244,162,97,0.3); }
 .status-chip.synced    { background: rgba(82,183,136,0.15); color: var(--color-success); border: 1px solid rgba(82,183,136,0.3); }
 .status-chip.acknowledged { background: rgba(76,201,240,0.15); color: var(--color-info); border: 1px solid rgba(76,201,240,0.3); }
+
+/* ── Responsive Refits ─────────────────────────────────────────────────────── */
+
+/* 1. Actions Row Group (notice vs submit) */
+.report-actions-group {
+  padding: 0 var(--space-5) var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.report-actions-group .generate-notice-btn {
+  width: 100%;
+}
+
+.report-actions-group .report-submit.submit-accent {
+  width: 100%;
+  margin: 0;
+  min-height: 50px;
+  background: linear-gradient(135deg, #52B788 0%, #2a9d8f 100%);
+  border: none;
+  border-radius: var(--radius-md);
+  color: #fff;
+  font-size: var(--text-base);
+  font-weight: var(--weight-bold);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 20px rgba(82, 183, 136, 0.25);
+  transition: all var(--duration-normal) var(--ease-out);
+}
+
+.report-actions-group .report-submit.submit-accent:hover:not(:disabled) {
+  transform: translateY(-1.5px);
+  box-shadow: 0 6px 24px rgba(82, 183, 136, 0.45);
+}
+
+@media (min-width: 560px) {
+  .report-actions-group {
+    flex-direction: row;
+  }
+}
+
+/* 2. Severity Pills Responsive Grid */
+.severity-pills-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-top: 8px;
+}
+
+@media (min-width: 480px) {
+  .severity-pills-row {
+    display: flex;
+  }
+}
+
+/* 3. Padding adjustments for small screens */
+@media (max-width: 480px) {
+  .report-view {
+    padding: var(--space-3);
+    gap: var(--space-3);
+  }
+
+  .report-view h1 {
+    font-size: 20px;
+  }
+
+  .legal-notice-header {
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .legal-flow {
+    padding: var(--space-3) var(--space-4);
+    gap: var(--space-3);
+  }
+
+  .legal-step {
+    padding: var(--space-3);
+  }
+
+  .report-actions-group {
+    padding: 0 var(--space-4) var(--space-4);
+  }
+
+  .notice-preview {
+    margin: 0 var(--space-4) var(--space-4);
+    padding: var(--space-4);
+    font-size: 10px;
+    line-height: 1.6;
+  }
+}

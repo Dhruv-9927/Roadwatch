@@ -8,8 +8,7 @@
  * - Risk Score Sandbox retained
  * - Model Card retained + enhanced
  */
-import { useEffect, useRef, useState } from 'react';
-import * as d3 from 'd3';
+import { useEffect, useState } from 'react';
 import { RISK_FEATURES, computeRiskScore } from '../../lib/risk-scorer';
 
 const css = `
@@ -102,10 +101,15 @@ const css = `
 
 /* Feature importance */
 .feature-bar-row { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-3); }
-.feature-bar-label { width: 190px; font-size: var(--text-xs); color: var(--color-text-secondary); flex-shrink: 0; }
+.feature-bar-label { width: 140px; font-size: var(--text-xs); color: var(--color-text-secondary); flex-shrink: 0; transition: width 0.3s; }
 .feature-bar-track { flex: 1; height: 8px; background: var(--color-bg-elevated); border-radius: var(--radius-pill); overflow: hidden; }
 .feature-bar-fill { height: 100%; border-radius: var(--radius-pill); background: linear-gradient(90deg, var(--color-sh), var(--color-accent)); transition: width 0.7s var(--ease-out); }
 .feature-bar-weight { width: 36px; text-align: right; font-size: var(--text-xs); font-family: var(--font-display); color: var(--color-text-muted); }
+
+@media (max-width: 480px) {
+  .feature-bar-row { flex-direction: column; align-items: stretch; gap: 4px; }
+  .feature-bar-label { width: 100%; }
+}
 
 /* Confusion matrix */
 .conf-matrix { display: grid; grid-template-columns: auto 1fr 1fr; gap: 2px; max-width: 320px; }

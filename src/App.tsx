@@ -3,6 +3,7 @@ import './index.css';
 import NavBar from './components/shared/NavBar';
 import SplashScreen from './components/scatter/SplashScreen';
 import { useAppStore } from './store/app.store';
+import { ChatBot } from './components/chatbot';
 
 // Lazy load views
 const MapView            = lazy(() => import('./components/map/MapView'));
@@ -46,21 +47,23 @@ export default function App() {
       {!showSplash && (
         <div className="app-shell animate-fade-in">
           <header className="app-header" role="banner">
-            <a href="/" className="app-logo" aria-label="ROADWATCH home">
-              <div className="logo-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-                  <path d="M9 22V12h6v10"/>
-                  <path d="M12 2v4M8 6l4-4 4 4"/>
-                </svg>
-              </div>
-              <span className="logo-wordmark">ROAD<span>WATCH</span></span>
-            </a>
+            <div className="header-content">
+              <a href="/" className="app-logo" aria-label="ROADWATCH home">
+                <div className="logo-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                    <path d="M9 22V12h6v10"/>
+                    <path d="M12 2v4M8 6l4-4 4 4"/>
+                  </svg>
+                </div>
+                <span className="logo-wordmark">ROAD<span>WATCH</span></span>
+              </a>
 
-            <div className="app-header-right">
-              <div className="online-badge">
-                <div className={`online-dot${offlineMode ? ' offline' : ''}`} />
-                {offlineMode ? 'Offline' : 'Live'}
+              <div className="app-header-right">
+                <div className="online-badge">
+                  <div className={`online-dot${offlineMode ? ' offline' : ''}`} />
+                  {offlineMode ? 'Offline' : 'Live'}
+                </div>
               </div>
             </div>
           </header>
@@ -112,6 +115,9 @@ export default function App() {
           <NavBar />
         </div>
       )}
+
+      {/* SafePath AI — floating chatbot, visible on every tab */}
+      {!showSplash && <ChatBot />}
     </>
   );
 }

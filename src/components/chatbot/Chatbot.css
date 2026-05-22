@@ -6,7 +6,7 @@
 
 .chatbot-fab {
   position: fixed;
-  bottom: calc(var(--tab-bar-height) + var(--space-5) + 48px);
+  bottom: calc(var(--tab-bar-height) + var(--space-4));
   right: var(--space-5);
   width: 56px;
   height: 56px;
@@ -63,35 +63,7 @@
   animation: pulse 2s ease-in-out infinite;
 }
 
-/* WhatsApp quick action fab */
-.whatsapp-fab {
-  position: fixed;
-  bottom: calc(var(--tab-bar-height) + var(--space-3));
-  right: calc(var(--space-5) + 8px); /* 56px vs 40px width -> shift 8px to center */
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: #25D366;
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: var(--shadow-md);
-  z-index: 58;
-  cursor: pointer;
-  transition: all var(--duration-fast);
-  text-decoration: none;
-}
 
-.whatsapp-fab:hover {
-  transform: scale(1.1);
-  box-shadow: var(--shadow-lg), 0 0 16px rgba(37, 211, 102, 0.4);
-}
-
-.whatsapp-fab svg {
-  width: 22px;
-  height: 22px;
-}
 
 /* ── Panel ────────────────────────────────────────────────────────────────── */
 
@@ -622,9 +594,7 @@
     right: var(--space-4);
   }
 
-  .whatsapp-fab {
-    right: calc(var(--space-4) + 8px);
-  }
+
 }
 
 /* ── Accessibility — reduced motion ───────────────────────────────────────── */
